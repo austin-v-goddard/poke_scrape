@@ -9,7 +9,6 @@ from pathlib import Path # Does file exist
 ## TODO
 #   Keep html on change
 #   Add output (prints every hour)
-#   include link in email
 
 ## Global Vars
 # HTML
@@ -89,13 +88,8 @@ if not Path(prod_file_name).is_file():
     write_prod_list(result_string)
     
 
-try:
-    while True: # Main Loop
-    
-        if not is_connected_to_internet():
-            print('Not connected to internet...')
-            time.sleep(5) # wait 5 seconds,
-            continue #  then check again
+while True: # Main Loop
+    try:
 
         result_string = poll_safari_zone()
 
@@ -107,12 +101,11 @@ try:
         #quit()
         time.sleep(30)
 
-# If an error occurs, stop program and notify admin
-except Exception as e:
-    print(e)
-    print("Exiting...")
-    message = 'Subject: Poke Scraper Down ' + curr_time() +  '. \n\nDeal with it.\n\n' + 'Reason: ' + str(e) + bot_sig
-    send_email(message, admin_mail) # send admin email
-    quit()
-
+    # If an error occurs, notify admin
+    except Exception as e:
+        print(e)
+        print("Encountered Error...")
+        message = 'Subject: Poke Scraper Encountered Error ' + curr_time() +  '. \n\nDeal with it.\n\n' + 'Reason: ' + str(e) + '\n\nAttempting to continue.\n\n' + bot_sig
+        send_email(message, admin_mail) # send admin email
+        continue
 
