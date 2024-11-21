@@ -4,7 +4,10 @@ from bs4 import BeautifulSoup # Parse HTML
 from datetime import datetime # Get current time
 import time # Wait function
 import smtplib, ssl # Send Email
+import imaplib # Read Email
+import email
 from pathlib import Path # Does file exist
+import threading
 
 ## TODO
 #   Keep html on change
@@ -66,19 +69,34 @@ def send_email(message, recipients):
         s.sendmail(bot_email_addr, recipient, message)
         s.quit()
 
-
-def is_connected_to_internet():
-    try:
-        response = requests.get('https://google.com', timeout=60)
-        return True
-    except requests.ConnectionError:
-        return False
         
 def curr_time():
     return str(datetime.now()).split('.')[0]
 
 
+def poll_incoming_emails():
+    pass
+
+
 ## Main
+
+imap_server = imaplib.IMAP4_SSL(host='imap.gmail.com')
+imap_server.login(bot_email_addr, app_password)
+imap_server.select()
+
+_, message_numbers_raw = imap_server.search(None, 'ALL')
+for message_number in message_numbers_raw[0].split():
+    _, msg_data = imap_server.fetch(message_number, '(RFC822)')
+    for response_part in msg_data:
+        if isinstance(response_part, tuple):
+            msg = email.message_from_string(response_part[1].decode())
+            for header in [ 'subject', 'to', 'from' ]:
+                print('%-8s: %s' % (header.upper(), msg[header]))
+
+
+quit()
+
+t1 = threading.Thread(target=print_square)
 
 
 # Check to see if product file exists. If not, create it.
