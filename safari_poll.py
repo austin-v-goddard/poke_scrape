@@ -85,28 +85,40 @@ def send_email(message, recipients):
         s.sendmail(bot_email_addr, recipient, message)
         s.quit()
 
-        
 
+def get_incoming_emails():
+    imap_server = imaplib.IMAP4_SSL(host='imap.gmail.com')
+    imap_server.login(bot_email_addr, app_password)
+    imap_server.select()
+
+    email_subjects = []
+    email_senders = []
+    email_infos = []
+    _, message_numbers_raw = imap_server.search(None, 'ALL')
+    for message_number in message_numbers_raw[0].split():
+        _, msg_data = imap_server.fetch(message_number, '(RFC822)')
+        for response_part in msg_data:
+            if isinstance(response_part, tuple):
+                msg = email.message_from_string(response_part[1].decode())
+                email_senders.append(msg['from'])
+                email_subjects.append(msg['subject'])
+
+    return [email_subjects,email_senders]
 
 def poll_incoming_emails():
     pass
 
 
 ## Main
+[email_subjects,email_senders] = get_incoming_emails()
 
-imap_server = imaplib.IMAP4_SSL(host='imap.gmail.com')
-imap_server.login(bot_email_addr, app_password)
-imap_server.select()
+if len(email_senders) is 0:
+    print("No new emails...")
+    # Continue
 
-_, message_numbers_raw = imap_server.search(None, 'ALL')
-for message_number in message_numbers_raw[0].split():
-    _, msg_data = imap_server.fetch(message_number, '(RFC822)')
-    for response_part in msg_data:
-        if isinstance(response_part, tuple):
-            msg = email.message_from_string(response_part[1].decode())
-            for header in [ 'subject', 'to', 'from' ]:
-                print('%-8s: %s' % (header.upper(), msg[header]))
-
+for subject,sender in zip(email_subjects,email_senders):
+    print(subject)
+    print(sender)
 
 quit()
 
