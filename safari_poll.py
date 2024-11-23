@@ -25,9 +25,25 @@ mail_list = ['austin.v.goddard@gmail.com','kyler.j.goddard@gmail.com','kassidie@
 admin_mail = ['austin.v.goddard@gmail.com']
 bot_sig = '\n\nI am a bot beep-boop.'
 
+
 ## Functions
+
+def curr_time():
+    return str(datetime.now()).split('.')[0]
+
+
+def continuous_request(url):
+    while True:
+        try:
+            response = requests.get(url).text
+            return response
+        except Exception as e:
+            print('Unable to get response from ' + url + ' at ' + curr_time() + '.')
+            continue
+
+
 def poll_safari_zone():
-    sz_html = requests.get(sz_url).text
+    sz_html = continuous_request(sz_url)
 
     sz_soup = BeautifulSoup(sz_html, 'html.parser')
 
@@ -70,8 +86,6 @@ def send_email(message, recipients):
         s.quit()
 
         
-def curr_time():
-    return str(datetime.now()).split('.')[0]
 
 
 def poll_incoming_emails():
@@ -108,7 +122,6 @@ if not Path(prod_file_name).is_file():
 
 while True: # Main Loop
     try:
-
         result_string = poll_safari_zone()
 
         if did_prod_list_change(result_string):
