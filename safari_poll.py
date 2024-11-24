@@ -39,6 +39,7 @@ def continuous_request(url):
             return response
         except Exception as e:
             print('Unable to get response from ' + url + ' at ' + curr_time() + '.')
+            time.sleep(5)
             continue
 
 
@@ -96,6 +97,7 @@ def get_incoming_emails():
     email_infos = []
     _, message_numbers_raw = imap_server.search(None, 'ALL')
     for message_number in message_numbers_raw[0].split():
+        imap_server.store(message_number, '+FLAGS', '\\Deleted')
         _, msg_data = imap_server.fetch(message_number, '(RFC822)')
         for response_part in msg_data:
             if isinstance(response_part, tuple):
@@ -105,24 +107,10 @@ def get_incoming_emails():
 
     return [email_subjects,email_senders]
 
-def poll_incoming_emails():
-    pass
 
 
 ## Main
-[email_subjects,email_senders] = get_incoming_emails()
 
-if len(email_senders) is 0:
-    print("No new emails...")
-    # Continue
-
-for subject,sender in zip(email_subjects,email_senders):
-    print(subject)
-    print(sender)
-
-quit()
-
-t1 = threading.Thread(target=print_square)
 
 
 # Check to see if product file exists. If not, create it.
@@ -131,16 +119,33 @@ if not Path(prod_file_name).is_file():
     result_string = poll_safari_zone()
     write_prod_list(result_string)
     
+# This is to clear inbox.
+[email_subjects,email_senders] = get_incoming_emails()
+
 
 while True: # Main Loop
     try:
+        # Check if any recieved emails
+        [email_subjects,email_senders] = get_incoming_emails()
+        for subject,sender in zip(email_subjects,email_senders):
+            if subject.lower() == "status":
+                print("Status request Accepted at " + curr_time() )
+                message = 'Subject: Status Request ' + curr_time() + '. \n\nStatus: On' + bot_sig
+                send_email(message, [sender]) # send admin email
+            else:
+                print("Unknown request at " + curr_time() )
+                message = 'Subject: Unknown Request ' + curr_time() + '. \n\nUnknown request.' + bot_sig
+                send_email(message, [sender]) # send admin email
+    
+        # Check safari zone
         result_string = poll_safari_zone()
-
         if did_prod_list_change(result_string):
             print("Preorders have changed...")
             write_prod_list(result_string)
             message = 'Subject: Change to Safari Zone Preorders ' + curr_time() +  '. \n\nSafariZone preorder change at: ' + curr_time() + '\n\n' + result_string + '\nLink: ' + sz_url + bot_sig
             send_email(message,mail_list)
+            
+        
         #quit()
         time.sleep(30)
 
