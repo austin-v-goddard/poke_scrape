@@ -79,23 +79,32 @@ def write_prod_list(result_string):
 
 
 def send_email(message, recipients):
-    for recipient in recipients:
-        s = smtplib.SMTP('smtp.gmail.com', 587)
-        s.starttls()
-        s.login(bot_email_addr, app_password)
-        s.sendmail(bot_email_addr, recipient, message)
-        s.quit()
-
+    while True:
+        try:
+            for recipient in recipients:
+                s = smtplib.SMTP('smtp.gmail.com', 587)
+                s.starttls()
+                s.login(bot_email_addr, app_password)
+                s.sendmail(bot_email_addr, recipient, message)
+                s.quit()
+            break
+        except Exception as e:
+            print('Unable to send to email at ' + curr_time() + '. Trying again...')
+            time.sleep(5)
+            continue
 
 def get_incoming_emails():
+
+    # Continually try and get
     imap_server = imaplib.IMAP4_SSL(host='imap.gmail.com')
     imap_server.login(bot_email_addr, app_password)
     imap_server.select()
+    _, message_numbers_raw = imap_server.search(None, 'ALL')
+
 
     email_subjects = []
     email_senders = []
     email_infos = []
-    _, message_numbers_raw = imap_server.search(None, 'ALL')
     for message_number in message_numbers_raw[0].split():
         imap_server.store(message_number, '+FLAGS', '\\Deleted')
         _, msg_data = imap_server.fetch(message_number, '(RFC822)')
@@ -108,6 +117,17 @@ def get_incoming_emails():
     return [email_subjects,email_senders]
 
 
+def get_incoming_emails_continuous():
+    while True:
+        try:
+            [email_subjects,email_senders] = get_incoming_emails()
+            break
+        except Exception as e:
+            print('Unable to connect to email server at ' + curr_time() + '.')
+            time.sleep(5)
+            continue
+            
+    return [email_subjects,email_senders]
 
 ## Main
 
@@ -120,22 +140,23 @@ if not Path(prod_file_name).is_file():
     write_prod_list(result_string)
     
 # This is to clear inbox.
-[email_subjects,email_senders] = get_incoming_emails()
+[email_subjects,email_senders] = get_incoming_emails_continuous()
 
 
+print("Starting poll.")
 while True: # Main Loop
     try:
         # Check if any recieved emails
-        [email_subjects,email_senders] = get_incoming_emails()
+        [email_subjects,email_senders] = get_incoming_emails_continuous()
         for subject,sender in zip(email_subjects,email_senders):
             if subject.lower() == "status":
                 print("Status request Accepted at " + curr_time() )
                 message = 'Subject: Status Request ' + curr_time() + '. \n\nStatus: On' + bot_sig
-                send_email(message, [sender]) # send admin email
+                send_email(message, [sender])
             else:
                 print("Unknown request at " + curr_time() )
                 message = 'Subject: Unknown Request ' + curr_time() + '. \n\nUnknown request.' + bot_sig
-                send_email(message, [sender]) # send admin email
+                send_email(message, [sender])
     
         # Check safari zone
         result_string = poll_safari_zone()
