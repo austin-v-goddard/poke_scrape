@@ -9,9 +9,6 @@ import email
 from pathlib import Path # Does file exist
 import threading
 
-## TODO
-#   Keep html on change
-#   Add output (prints every hour)
 
 ## Global Vars
 # HTML
@@ -164,10 +161,10 @@ while True: # Main Loop
             print("Preorders have changed...")
             write_prod_list(result_string)
             message = 'Subject: Change to Safari Zone Preorders ' + curr_time() +  '. \n\nSafariZone preorder change at: ' + curr_time() + '\n\n' + result_string + '\nLink: ' + sz_url + bot_sig
-            send_email(message,mail_list)
+            #send_email(message,mail_list)
             
         
-        #quit()
+        quit()
         time.sleep(30)
 
     # If an error occurs, notify admin
